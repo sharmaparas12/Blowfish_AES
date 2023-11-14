@@ -1,35 +1,28 @@
 <?php
 
-function my_encrypt($ssn_ein, $key) {
-    
-    $encryption_key = base64_decode($key);
-    
+function my_encrypt($data, $key)
+{
     $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
-    
-    $encrypted = openssl_encrypt($ssn_ein, 'aes-256-cbc', $encryption_key, 0, $iv);
-    $encoded_iv = base64_encode($iv);
-    $encoded_data = base64_encode($encrypted);
-    return $encoded_data . '::' . $encoded_iv;
+    $encryptedData = openssl_encrypt($data, 'aes-256-cbc', $key, 0, $iv);
+    return base64_encode($iv . $encryptedData);
 }
 
-function my_decrypt($ssn_ein, $key) {
-    
-    $encryption_key = base64_decode($key);
-    
-    list($encoded_data, $encoded_iv) = explode('::', $ssn_ein, 2);
-    $iv = base64_decode($encoded_iv);
-    $encrypted_data = base64_decode($encoded_data);
-    return openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
+function my_decrypt($data, $key)
+{
+    $data = base64_decode($data);
+    $ivSize = openssl_cipher_iv_length('aes-256-cbc');
+    $iv = substr($data, 0, $ivSize);
+    $encryptedData = substr($data, $ivSize);
+    return rtrim(openssl_decrypt($encryptedData, 'aes-256-cbc', $key, 0, $iv), "\0");
 }
 
+$aesKey = base64_encode(openssl_random_pseudo_bytes(32));
+$voterId = "123-45-6789";
 
-$encryption_key = base64_encode(openssl_random_pseudo_bytes(32)); 
+$encryptedData = my_encrypt($ssn_ein, $aesKey);
+echo "Encrypted Data: " . $encryptedData . "\n";
 
-$ssn_ein = "123-45-6789";
+$decryptedData = my_decrypt($encryptedData, $aesKey);
+echo "Decrypted Data: " . $decryptedData . "\n";
 
-$encrypted_data = my_encrypt($ssn_ein, $encryption_key);
-echo "Encrypted Data: " . $encrypted_data . "\n";
-
-$decrypted_data = my_decrypt($encrypted_data, $encryption_key);
-echo "Decrypted Data: " . $decrypted_data . "\n";
 ?>
